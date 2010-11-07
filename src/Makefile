@@ -21,9 +21,12 @@ DEPS = libdiehard.cpp bitmap.h \
 	randomheap.h diehardheap.h randomminiheap.h \
 	randomnumbergenerator.h realrandomvalue.h sassert.h \
 	sparc-interchange.il staticif.h staticlog.h  \
-	usewinhard.cpp version.h wrapper.cpp
+	version.h wrapper.cpp
 
 .PHONY: darwin linux solaris
+
+libdiehard.so: $(DEPS)
+	make linux
 
 linux:
 	$(LINUX_COMMAND_STANDALONE)
