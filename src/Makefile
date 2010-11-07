@@ -25,12 +25,8 @@ DEPS = libdiehard.cpp bitmap.h \
 
 .PHONY: darwin linux solaris
 
-all:
-	@echo "Enter target (linux, solaris, or darwin)."
-
 linux:
 	$(LINUX_COMMAND_STANDALONE)
-	$(LINUX_COMMAND_REPLICATED)
 
 solaris:
 	$(SOLARIS_COMMAND_STANDALONE)

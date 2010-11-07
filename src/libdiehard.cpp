@@ -111,22 +111,12 @@ typedef ANSIWrapper<LockHeap<ReentrantHeap<CombineHeap<DieHardHeap<Numerator, De
 					 TheLargeHeap> > > >
 					 TheCustomHeapType;
 
-#if 0 // defined(_WIN32)
-static TheCustomHeapType _theCustomHeap;
-
-static TheCustomHeapType * getCustomHeap (void) {
-  return &_theCustomHeap;
-}
-#else
-
 inline static TheCustomHeapType * getCustomHeap (void) {
   static char buf[sizeof(TheCustomHeapType)];
   static TheCustomHeapType * _theCustomHeap = 
     new (buf) TheCustomHeapType;
   return _theCustomHeap;
 }
-
-#endif
 
 #if defined(_WIN32)
 #pragma warning(disable:4273)
