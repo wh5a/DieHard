@@ -30,7 +30,6 @@ enum { Numerator = 4, Denominator = 3 };
 #include "realrandomvalue.h"
 #include "largeheap.h"
 #include "lockheap.h"
-#include "oneheap.h"
 #include "diehardheap.h"
 #include "reentrantheap.h"
 #include "version.h"
@@ -105,10 +104,8 @@ extern "C" {
 
 /*************************  define the DieHard heap ************************/
 
-class TheLargeHeap : public OneHeap<LockHeap<LargeHeap> > {};
-
-typedef ANSIWrapper<LockHeap<ReentrantHeap<CombineHeap<DieHardHeap<Numerator, Denominator, 65536, (DIEHARD_DIEFAST == 1)>,
-					 TheLargeHeap> > > >
+typedef ANSIWrapper<ReentrantHeap<CombineHeap<DieHardHeap<Numerator, Denominator, 65536, (DIEHARD_DIEFAST == 1)>,
+					 LargeHeap> > >
 					 TheCustomHeapType;
 
 inline static TheCustomHeapType * getCustomHeap (void) {
