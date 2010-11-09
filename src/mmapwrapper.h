@@ -117,6 +117,7 @@ public:
     static int fd = ::open ("/dev/zero", O_RDWR);
     ptr = mmap (NULL, sz, MMAP_PROTECTION_MASK, MAP_PRIVATE, fd, 0);
 #else
+    // LINUX
     ptr = mmap (NULL, sz, MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
 
