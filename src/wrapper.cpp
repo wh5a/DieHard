@@ -59,7 +59,7 @@ extern "C" void * MYCDECL CUSTOM_MALLOC (size_t sz)
   }
 #endif
   void * ptr = getCustomHeap()->malloc (sz);
-#if !DIEHARD_DIEFAST
+#if 0
   if (ptr) {
     memset (ptr, 0, sz);
   }
