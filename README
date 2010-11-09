@@ -1,22 +1,54 @@
- ----------------------------------------
- DieHard
+Here we give an brief analysis of the work flow of C programs on
+Linux.
 
- Copyright (C) 2005-2006 by Emery Berger,
- University of Massachusetts Amherst.
+libdiehard.cpp gets compiled to libdiehard.so, which when added to
+LD_PRELOAD will intercept all malloc calls and
+friends. libdiehard_r.so is for replicated execution.
 
- http://www.diehard-software.org
- ----------------------------------------
+libdiehard.cpp #include wrapper.cpp, which serves as the entry points
+for the library functions.
 
- DieHard automatically hardens software applications against a wide
- range of bugs. These bugs -- known as memory errors -- often end up
- as serious security vulnerabilities, cause crashes, or lead to
- unpredictable behavior. DieHard either eliminates these bugs
- altogether, or avoids them with high probability. In other words,
- DieHard can take some buggy programs and make them bug-free (or close
- to it).
+Although you only see libdiehard.cpp getting compiled, all interesting
+implementations take place in those .h files containing template
+definitions. libdiehard.cpp simply combines a set of heap types and
+picks the parameters to create a heap instance. 
 
- For information about DieHard and how to use it, point your browser
- to the file docs/index.html.
+The heap's type is
+ANSIWrapper<LockHeap<ReentrantHeap<CombineHeap<DieHardHeap<Numerator, Denominator, 65536, (DIEHARD_DIEFAST == 1)>, TheLargeHeap> > > >.
+Follow the types from the outermost and you get the calling sequences.
 
- The source code for DieHard is located in the directory src/.
+Essentially, we are managing two types of heaps by combining a small
+one (DieHardHeap) and a big one (LargeHeap). When a request is larger
+than a threshold (by default 64K, the third parameter to the
+DieHardHeap template), we allocate directly from LargeHeap.
 
+DieHardHeap is described in the journal paper Section 4.1. DieHard
+dynamically sizes its heap to be M times larger than requested, where
+M is a fraction >= 1. By default libdiehard.cpp chooses 4/3 (the first
+and second parameters to the DieHardHeap template).
+
+DieHard manages memory through miniheaps. Each miniheap contains
+objects of exactly one size. DieHard uses a clever template trick to
+declare miniheaps at compile time (see the use of StaticForLoop in
+diehardheap.h). The smallest miniheap holds doubles (objects smaller
+than doubles are rounded up), the next holds objects of twice the
+size, etc, until the largest miniheap holds objects of 64K.
+
+If the fourth parameter DIEHARD_DIEFAST is set, when a miniheap is
+first initialized, or when a buffer is freed, it's filled with a
+random word. Every time a buffer is malloc'ed or free'd, DieHard
+checks to see if the allocated buffer only contains repeating words of
+that random value. Doing this helps capturing heap overflows.
+
+LargeHeap manages memory simply through mmap/munmap wrapped by
+MmapWrapper. MmapWrapper doesn't specify an address and lets the OS
+pick one, which isn't random at all. We may want to randomize
+this. The requested size doesn't have to be divisible by page size.
+Therefore LargeHeap can create external fragmentation. When the
+requested size is large, the overhead is negligible.
+
+In the end the miniheaps are also allocated through mmap. Their
+addresses are not very random, but objects allocated from the
+miniheaps are picked randomly.
+
+For more randomness, look at DieHarder paper Section 6.3 for more ideas.
