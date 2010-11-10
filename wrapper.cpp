@@ -10,9 +10,8 @@
 #include <string.h> // for memcpy
 #include <errno.h>
 
-#if !defined(CUSTOM_PREFIX)
-#define CUSTOM_PREFIX(n) n
-#endif
+#define CUSTOM_PREFIX(n) DieHard_##n
+//#define CUSTOM_PREFIX(n) n
 
 #define CUSTOM_MALLOC(x)     CUSTOM_PREFIX(malloc)(x)
 #define CUSTOM_FREE(x)       CUSTOM_PREFIX(free)(x)
@@ -24,50 +23,15 @@
 #define CUSTOM_VALLOC(x)     CUSTOM_PREFIX(valloc)(x)
 #define CUSTOM_PVALLOC(x)    CUSTOM_PREFIX(pvalloc)(x)
 
-#if defined(_WIN32)
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-// Disable warnings about long (> 255 chars) identifiers.
-#pragma warning(disable:4786)
-// Set inlining to the maximum possible depth.
-#pragma inline_depth(255)
-#define MYCDECL __cdecl
-#if !defined(NO_INLINE)
-#define NO_INLINE __declspec(noinline)
-#endif
-#if !defined(NDEBUG)
-#define __forceinline inline
-#endif
-
-#else // not _WIN32
-  #define MYCDECL
-#endif
-
 /***** generic malloc functions *****/
 
-static int bigMallocs = 0;
-
-extern "C" void * MYCDECL CUSTOM_MALLOC (size_t sz)
+extern "C" void * CUSTOM_MALLOC (size_t sz)
 {
-#if 0
-  if (sz >= 4096) {
-    bigMallocs++;
-    char buf[255];
-    sprintf (buf, "big mo mallocs = %d\n", bigMallocs);
-    printf (buf);
-  }
-#endif
   void * ptr = getCustomHeap()->malloc (sz);
-#if 0
-  if (ptr) {
-    memset (ptr, 0, sz);
-  }
-#endif
   return ptr;
 }
 
-extern "C" void * MYCDECL CUSTOM_CALLOC (size_t nelem, size_t elsize)
+extern "C" void * CUSTOM_CALLOC (size_t nelem, size_t elsize)
 {
   size_t n = nelem * elsize;
   if (n == 0) {
@@ -80,7 +44,7 @@ extern "C" void * MYCDECL CUSTOM_CALLOC (size_t nelem, size_t elsize)
   return ptr;
 }
 
-extern "C" void * MYCDECL CUSTOM_MEMALIGN (size_t alignment, size_t size)
+extern "C" void * CUSTOM_MEMALIGN (size_t alignment, size_t size)
 {
   // Check for non power-of-two alignment, or mistake in size.
   if ((alignment == 0) ||
@@ -93,7 +57,7 @@ extern "C" void * MYCDECL CUSTOM_MEMALIGN (size_t alignment, size_t size)
 }
 
 
-extern "C" size_t MYCDECL CUSTOM_GETSIZE (void * ptr)
+extern "C" size_t CUSTOM_GETSIZE (void * ptr)
 {
   if (ptr == NULL) {
     return 0;
@@ -102,7 +66,7 @@ extern "C" size_t MYCDECL CUSTOM_GETSIZE (void * ptr)
   return objSize;
 }
 
-extern "C" void MYCDECL CUSTOM_FREE (void * ptr)
+extern "C" void CUSTOM_FREE (void * ptr)
 {
   // FIX ME
   //  memset (ptr, 0, CUSTOM_GETSIZE(ptr));
@@ -112,12 +76,12 @@ extern "C" void MYCDECL CUSTOM_FREE (void * ptr)
 
 // for 4.3BSD compatibility.
 
-extern "C" void MYCDECL CUSTOM_PREFIX(cfree) (void * ptr)
+extern "C" void CUSTOM_PREFIX(cfree) (void * ptr)
 {
   getCustomHeap()->free (ptr);
 }
 
-extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
+extern "C" void * CUSTOM_REALLOC (void * ptr, size_t sz)
 {
   if (ptr == NULL) {
     ptr = CUSTOM_MALLOC (sz);
@@ -147,7 +111,7 @@ extern "C" void * MYCDECL CUSTOM_REALLOC (void * ptr, size_t sz)
 }
 
 #if defined(linux)
-extern "C" char * MYCDECL CUSTOM_PREFIX(strndup) (const char * s, size_t sz)
+extern "C" char * CUSTOM_PREFIX(strndup) (const char * s, size_t sz)
 {
   char * newString = NULL;
   if (s != NULL) {
@@ -162,7 +126,7 @@ extern "C" char * MYCDECL CUSTOM_PREFIX(strndup) (const char * s, size_t sz)
 #endif
 
 #if 0 // FIX ME
-extern "C" char * MYCDECL CUSTOM_PREFIX(strdup) (const char * s)
+extern "C" char * CUSTOM_PREFIX(strdup) (const char * s)
 {
   char * newString = NULL;
   if (s != NULL) {
@@ -177,7 +141,7 @@ extern "C" char * MYCDECL CUSTOM_PREFIX(strdup) (const char * s)
 
 #if defined(__GNUC__)
 #include <wchar.h>
-extern "C" wchar_t * MYCDECL CUSTOM_PREFIX(wcsdup) (const wchar_t * s)
+extern "C" wchar_t * CUSTOM_PREFIX(wcsdup) (const wchar_t * s)
 {
   wchar_t * newString = NULL;
   if (s != NULL) {
@@ -235,7 +199,7 @@ void operator delete[] (void * ptr)
 
 typedef char * getcwdFunction (char *, size_t);
 
-extern "C"  char * MYCDECL CUSTOM_PREFIX(getcwd) (char * buf, size_t size)
+extern "C"  char * CUSTOM_PREFIX(getcwd) (char * buf, size_t size)
 {
   static getcwdFunction * real_getcwd
     = (getcwdFunction *) dlsym (RTLD_NEXT, "getcwd");
@@ -256,13 +220,13 @@ extern "C"  char * MYCDECL CUSTOM_PREFIX(getcwd) (char * buf, size_t size)
 
 // A stub function to ensure that we capture mallopt.
 // It does nothing and always returns a failure value (0).
-extern "C" int MYCDECL CUSTOM_MALLOPT (int, int)
+extern "C" int CUSTOM_MALLOPT (int, int)
 {
   // Always fail.
   return 0;
 }
 
-extern "C" void * MYCDECL CUSTOM_VALLOC (size_t sz)
+extern "C" void * CUSTOM_VALLOC (size_t sz)
 {
   // Equivalent to memalign(pagesize, sz).
   // For convenience, we assume pages are 8K.
@@ -271,7 +235,7 @@ extern "C" void * MYCDECL CUSTOM_VALLOC (size_t sz)
 }
 
 
-extern "C" void * MYCDECL CUSTOM_PVALLOC (size_t sz)
+extern "C" void * CUSTOM_PVALLOC (size_t sz)
 {
   // Rounds up to the next pagesize and then calls valloc.
   sz = (sz + 8191) & ~8191;
@@ -294,4 +258,3 @@ extern "C" int posix_memalign (void **memptr, size_t alignment, size_t size)
     return 0;
   }
 }
-

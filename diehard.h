@@ -1,4 +1,3 @@
-#include "version.h"
 #include "platformspecific.h"
 
 #ifndef DIEHARD_REPLICATED
